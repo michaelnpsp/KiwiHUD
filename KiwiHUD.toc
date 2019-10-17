@@ -1,8 +1,15 @@
+#@retail@
 ## Interface: 80200
-## Version: 0.1
+## X-WoW-Project: retail
+#@end-retail@
+#@non-retail@
+# ## Interface: 11302
+## X-WoW-Project: classic
+#@end-non-retail@
 ## Title: |cFF7FFF72Kiwi|r HUD
 ## Notes: Simple HUD for health, mana & cast
 ## Author: Michael
+## Version: @project-version@
 ## SavedVariables: KiwiHUDDB
 
 Libs\LibStub\LibStub.lua
@@ -15,6 +22,8 @@ Libs\AceGUI-3.0-SharedMediaWidgets\widget.xml
 Libs\AceConfig-3.0\AceConfig-3.0.xml
 
 core.lua
+#@non-retail@
 shieldsclassic.lua
+#@end-non-retail@
 options.lua
 database.lua
