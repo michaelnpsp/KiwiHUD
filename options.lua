@@ -577,7 +577,7 @@ options.hideFull= {
 		editedBar.hideValue = value and 1 or nil
 		addon:LayoutBar(editedBarIndex)
 	end,
-	hidden = function() return editedBar.type~='health' and editedBar.type~='power' and editedBar.type~='manaalt' end,
+	hidden = function() return editedBar.type~='myshields' and editedBar.type~='health' and editedBar.type~='power' and editedBar.type~='manaalt' end,
 }
 
 options.hideEmpty = {
@@ -592,7 +592,37 @@ options.hideEmpty = {
 		editedBar.hideValue = value and 0 or nil
 		addon:LayoutBar(editedBarIndex)
 	end,
-	hidden = function() return editedBar.type~='health' and editedBar.type~='power' and editedBar.type~='manaalt' end,
+	hidden = function() return editedBar.type~='myshields' and editedBar.type~='health' and editedBar.type~='power' and editedBar.type~='manaalt' end,
+}
+
+options.shieldMaxHealth = {
+	type = "toggle",
+	order = 2.2,
+	name = "Max Health Scale",
+	desc = "Full filled bar represents the player max health.",
+	get = function()
+		return not editedBar.shieldMax
+	end,
+	set = function ( _, value)
+		editedBar.shieldMax = (not value) or nil
+		addon:LayoutBar(editedBarIndex)
+	end,
+	hidden = function() return editedBar.type~='myshields' end,
+}
+
+options.shieldMaxShield = {
+	type = "toggle",
+	order = 2.3,
+	name = "Max Shield Scale",
+	desc = "Full filled bar represents the maximum shield capacity.",
+	get = function()
+		return editedBar.shieldMax
+	end,
+	set = function ( _, value)
+		editedBar.shieldMax = value or nil
+		addon:LayoutBar(editedBarIndex)
+	end,
+	hidden = function() return editedBar.type~='myshields' end,
 }
 
 options.displayShield = {

@@ -10,6 +10,7 @@ local pairs = pairs
 local ipairs = ipairs
 local unpack = unpack
 local UnitHealthMax = UnitHealthMax
+local GetSpellBonusHealing = GetSpellBonusHealing
 
 --=========================================
 
@@ -17,9 +18,11 @@ local RegisterCallback, UnregisterCallback, GetPlayerAbsorbValues
 do
 	local updates = {} -- registered callback objects&methods for updates
 	local absorbCnt = 0 -- number of non-zero values in absorbSch table
-	local absorbTot = 0 -- total absorbs
-	local absorbIdx = {} -- absorbIdx[spellName] = schoolIndex in absorbSch table
+	local absorbCurTot = 0 -- total absorbs
+	local absorbMaxTot = 0 -- max total absorbs
+	local absorbMax = {} -- absorbMax[spellName] = max absorb value
 	local absorbCur = {} -- absorbCur[spellName] = absorb value
+	local absorbIdx = {} -- absorbIdx[spellName] = schoolIndex in absorbSch table
 	local absorbSch = { 0,0,0,0,0,0,0,0,0 }
 
 	local InitAbsorbData, CalcAbsorbValue
@@ -178,20 +181,26 @@ do
 	end
 
 	local function UpdateValues(noNotify)
+		local curPrev = absorbCurTot
+		local maxPrev = absorbMaxTot
 		if absorbCnt>0 then
-			absorbTot, absorbCnt = 0, 0
 			for i=1,#absorbSch do
 				absorbSch[i] = 0
 			end
 		end
+		absorbCurTot, absorbMaxTot, absorbCnt = 0, 0, 0
 		for spellName,value in pairs(absorbCur) do
 			if value>0 then
 				local idx  = absorbIdx[spellName]
 				local prev = absorbSch[idx]
 				absorbSch[idx] = prev + value
-				absorbTot = absorbTot + value
+				absorbCurTot = absorbCurTot + value
+				absorbMaxTot = absorbMaxTot + absorbMax[spellName]
 				if prev==0 then absorbCnt = absorbCnt + 1 end
 			end
+		end
+		if absorbCurTot<curPrev then
+			absorbMaxTot = maxPrev
 		end
 		if not noNotify then
 			for obj,func in pairs(updates) do
@@ -213,11 +222,13 @@ do
 			if absorbIdx[spellName] then
 				local value = CalcAbsorbValue( GetBuffSpellId(spellName) )
 				if value then
-					if value>=0 then
+					local valuePrev = absorbCur[spellName] or 0
+					if valuePrev>=0 then
 						absorbCur[spellName] = value
 					else
-						absorbCur[spellName] = value + (absorbCur[spellName] or 0) -- If damage event happened before aura was removed
+						absorbCur[spellName] = value + valuePrev -- If absorb damage event happened before aura was applied
 					end
+					absorbMax[spellName] = value
 					if not noUpdate then UpdateValues() end
 				end
 			end
@@ -249,6 +260,7 @@ do
 				local spellName = select(13, ...)
 				if absorbCur[spellName] then
 					absorbCur[spellName] = nil
+					absorbMax[spellName] = nil
 					UpdateValues()
 				end
 			end,
@@ -307,7 +319,7 @@ do
 	end
 
 	function GetPlayerAbsorbValues()
-		return absorbSch, absorbTot, absorbCnt
+		return absorbCnt, absorbSch, absorbCurTot, absorbMaxTot
 	end
 
 end
@@ -316,7 +328,7 @@ end
 
 local school_colors = addon.SchoolColors
 
-local function CreateTex(self,index)
+local function CreateTexture(self,index)
 	local tex = addon.Texture_Create(self, 'ARTWORK')
 	tex:SetTexture(addon.db.texfg)
 	tex:SetPoint('BOTTOMLEFT',  self.textures[index-1], 'TOPLEFT')
@@ -326,7 +338,7 @@ local function CreateTex(self,index)
 end
 
 local function UpdateTexture(self, index, valueFrom , value, valueMax, schoolIndex)
-	local tex = self.textures[index] or CreateTex(self,index, schoolIndex)
+	local tex = self.textures[index] or CreateTexture(self,index, schoolIndex)
 	local valueTo = min( 1, valueFrom + value/valueMax )
 	tex:SetTexCoord( self.coord1, self.coord2, 1-valueTo, 1-valueFrom)
 	tex:SetHeight( self.height * (valueTo-valueFrom) )
@@ -337,9 +349,10 @@ end
 
 local function UpdateValue(self)
 	local idx = 0
-	local absorbs, total, count = GetPlayerAbsorbValues()
+	local count, absorbs, total, maxTotal = GetPlayerAbsorbValues()
 	if count>0 then
-		local valueMax, valuePrev = UnitHealthMax('player') or 1, 0
+		local valuePrev = 0
+		local valueMax  = self.db.shieldMax and maxTotal or UnitHealthMax('player') or 1
 		for i,value in ipairs(absorbs) do
 			if value>0 then
 				idx = idx + 1
@@ -349,7 +362,11 @@ local function UpdateValue(self)
 		end
 	end
 	if self.Text then
-		self.Text:SetFormattedText("%.0f",total)
+		if total>0 then
+			self.Text:SetFormattedText("%.0f",total)
+		else
+			self.Text:SetText('')
+		end
 	end
     for i=idx+1,self.visibleTextureCount do
 		self.textures[i]:Hide()
