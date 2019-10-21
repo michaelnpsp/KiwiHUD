@@ -17,12 +17,12 @@ local GetSpellBonusHealing = GetSpellBonusHealing
 local RegisterCallback, UnregisterCallback, GetPlayerAbsorbValues
 do
 	local updates = {} -- registered callback objects&methods for updates
+	local absorbIdx = {} -- absorbIdx[spellName] = schoolIndex in absorbSch table (static data)
 	local absorbCnt = 0 -- number of non-zero values in absorbSch table
 	local absorbCurTot = 0 -- total absorbs
 	local absorbMaxTot = 0 -- max total absorbs
 	local absorbMax = {} -- absorbMax[spellName] = max absorb value
 	local absorbCur = {} -- absorbCur[spellName] = absorb value
-	local absorbIdx = {} -- absorbIdx[spellName] = schoolIndex in absorbSch table
 	local absorbSch = { 0,0,0,0,0,0,0,0,0 }
 
 	local InitAbsorbData, CalcAbsorbValue
@@ -199,7 +199,7 @@ do
 				if prev==0 then absorbCnt = absorbCnt + 1 end
 			end
 		end
-		if absorbCurTot<curPrev then
+		if absorbCurTot<curPrev and absorbMaxTot<maxPrev  then
 			absorbMaxTot = maxPrev
 		end
 		if not noNotify then
@@ -234,7 +234,9 @@ do
 			end
 		end
 		function ResetValues(noNotify)
+			absorbCurTot, absorbMaxTot, absorbCnt = 0, 0, 0
 			wipe(absorbCur)
+			wipe(absorbMax)
 			for i = 1, 64 do
 				local spellName = UnitBuff("player", i)
 				if not spellName then break end
@@ -278,8 +280,11 @@ do
 					UpdateValues()
 				end
 			end,
+			UNIT_DIED = function()
+				ResetValues(true)
+			end,
 		}
-		function CleuEvent()
+		function CleuEvent(_, event)
 			local _, eventType,_,_,_,_,_,dstGUID = CombatLogGetCurrentEventInfo()
 			if playerGUID == dstGUID then
 				local func = events[ eventType ]
