@@ -102,6 +102,8 @@ local TEXTURES_BG = {
 	"Interface\\Addons\\KiwiHUD\\media\\blizzardbg",
 }
 
+local TEXTURES_MARGIN = { 1, 1, 1, 1, 1, 1.0325 }
+
 --------------------------------------------------------
 
 local function Opt_GetOption( tree, order )
@@ -223,6 +225,7 @@ Opt_SetupOption( 'General', 'Bars Textures', {
 		set = function(_, value)
 			addon.db.texfg = TEXTURES_FG[value]
 			addon.db.texbg = TEXTURES_BG[value]
+			addon.db.texmargin = TEXTURES_MARGIN[value]
 			addon:DestroyBars()
 			addon:CreateBars()
 		end,

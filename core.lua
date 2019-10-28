@@ -398,6 +398,7 @@ do
 		tex:SetVertexColor(1,1,1,1)
 		tex:Hide()
 		self.textures[index or 1] = tex
+		self.margin = addon.db.texmargin or 1
 		if db.textEnabled then
 			local text = Font_Create(self,'BORDER')
 			text:SetShadowOffset(1,-1)
@@ -657,9 +658,9 @@ do
 
 	local function OnUpdate(self,elapsed)
 		local dur = self.dur + elapsed
-		if dur>self.max then self:Hide(); return end
+		if dur>=self.max then self:Hide(); return end
 		self.dur = dur
-		local value = dur / self.max
+		local value = dur / self.maxa
 		local tex = self.textures[1]
 		tex:SetHeight( self.height * value )
 		tex:SetTexCoord( self.coord1, self.coord2, 1-value, 1 )
@@ -671,6 +672,7 @@ do
 			self.castID = castID
 			self.dur    = max( GetTime() - start/1000 , 0 )
 			self.max    = (finish - start) / 1000
+			self.maxa   = self.max * self.margin
 			self:Show()
 		else
 			self:Hide()
@@ -683,6 +685,7 @@ do
 			self.castID = nil
 			self.dur    = max( GetTime() - start/1000 , 0 )
 			self.max    = (finish - start) / 1000
+			self.maxa   = self.max * self.margin
 			self:Show()
 		else
 			self:Hide()
@@ -757,7 +760,7 @@ do
 	end
 
 	local function CastStart(self, event, unit, guid, spellID)
-		if event ~= 'UNIT_SPELLCAST_INTERRUPTED' and (not self.hideOnCast or event ~= "UNIT_SPELLCAST_START" )then
+		if event ~= 'UNIT_SPELLCAST_INTERRUPTED' and not (self.hideOnCast and (event == "UNIT_SPELLCAST_START" or UnitChannelInfo('player'))) then
 			local start, duration = GetSpellCooldown( isRetail and 61304 or spellID )
 			if duration>0 and (isRetail or duration<=1.51) then
 				self.dur = duration - (GetTime() - start)
