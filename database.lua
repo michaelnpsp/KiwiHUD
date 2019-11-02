@@ -6,9 +6,9 @@ local addon = KiwiHUD
 
 local rootDB = { global = {}, profiles = {}, profileChars = {} }
 
-local GetNumSpecializations = GetNumSpecializations or function() return 1 end
-local GetSpecialization     = GetSpecialization     or function() return 1 end
-local GetSpecializationInfo = GetSpecializationInfo or function() return 1, "Default" end
+local GetNumSpecializations = not addon.isClassic and GetNumSpecializations or function() return 1 end
+local GetSpecialization     = not addon.isClassic and GetSpecialization     or function() return 1 end
+local GetSpecializationInfo = not addon.isClassic and GetSpecializationInfo or function() return 1, "Default" end
 
 ----------------------------------------------------------------
 -- Initialize Database

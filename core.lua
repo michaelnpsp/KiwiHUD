@@ -470,7 +470,7 @@ do
 	local UnitPower = UnitPower
 	local UnitPowerMax = UnitPowerMax
 	local UnitPowerType = UnitPowerType
-	local GetSpecialization = GetSpecialization
+	local GetSpecialization = isRetail and GetSpecialization or function() end
 
 	local function UpdateColor(self)
 		self:SetColor( PowerColors[POWER_MANA] )
