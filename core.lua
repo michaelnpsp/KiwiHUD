@@ -427,10 +427,13 @@ do
 		self:SetColor( PowerColors[type] or PowerColors[POWER_MANA] )
 	end
 
-	local function UpdateValue(self)
+	local function UpdateValue(self, _, _, powerType)
 		local u = self.unit
-		local m = UnitPowerMax(u)
-		self:SetValue( m>0 and UnitPower(u) / m or 0 )
+		local _, typ = UnitPowerType(u)
+		if powerType == nil or typ == powerType then
+			local m = UnitPowerMax(u)
+			self:SetValue( m>0 and UnitPower(u) / m or 0 )
+		end
 	end
 
 	local embed = { UpdateColor = UpdateColor, UpdateValue = UpdateValue }
