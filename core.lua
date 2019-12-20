@@ -327,29 +327,36 @@ do
 		tex:SetVertexColor( unpack(color) )
 	end
 
-	function class:SetValue(value)
+	function class:SetValue(value, valueMax)
+		local pvalue = valueMax and value/valueMax or value
 		local tex = self.textures[1]
-		tex:SetHeight( self.height * value )
-		tex:SetTexCoord( self.coord1, self.coord2, 1-value, 1 )
+		tex:SetHeight( self.height * pvalue )
+		tex:SetTexCoord( self.coord1, self.coord2, 1-pvalue, 1 )
 		tex:SetShown(value>0)
-		if self.Text then
-			self.Text:SetFormattedText("%.0f%%",value*100)
-		end
 		local hideValue = self.hideValue
+		if self.Text then
+			if valueMax then -- value & valueMax
+				self.Text:SetFormattedText(value)
+			else -- percent, no valueMAx
+				self.Text:SetFormattedText("%.0f%%",value*100)
+			end
+		end
 		if hideValue then
-			self:SetShown( InCombat or value ~= hideValue )
+			self:SetShown( InCombat or pvalue ~= hideValue )
 		end
 		self.value = value
+		self.valuePer = pvalue
+		self.valueMax = valueMax
 	end
 
 	function class:UpdateValue()
 		if self.value then
-			self:SetValue(self.value)
+			self:SetValue(self.value, self.valueMax)
 		end
 	end
 
-	function class:UpdateVisibility(value)
-		value = value or self.value
+	function class:UpdateVisibility(value) -- value == 0 to 1
+		value = value or self.valuePer
 		local hideValue = self.hideValue
 		if hideValue then
 			self:SetShown( InCombat or value ~= hideValue )
@@ -361,7 +368,7 @@ do
 		local unit  = self.unit
 		self:SetAlpha( (not unit or unit=='player' or UnitExists(unit)) and AlphaCombat or 0 )
 		if self.hideValue then
-			self:SetShown( InCombat or self.value ~= self.hideValue )
+			self:SetShown( InCombat or self.valuePer ~= self.hideValue )
 		end
 	end
 
@@ -432,7 +439,13 @@ do
 		local _, typ = UnitPowerType(u)
 		if powerType == nil or typ == powerType then
 			local m = UnitPowerMax(u)
-			self:SetValue( m>0 and UnitPower(u) / m or 0 )
+			if m>0 then
+				if m>150 then
+					self:SetValue( UnitPower(u) / m )
+				else
+					self:SetValue( UnitPower(u), m )
+				end
+			end
 		end
 	end
 

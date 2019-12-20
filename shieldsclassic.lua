@@ -377,8 +377,11 @@ local function UpdateValue(self)
 		self.textures[i]:Hide()
 	end
 	self.visibleTextureCount = idx
-	self:UpdateVisibility(total)
+	local totalPer = maxTotal>0 and total/maxTotal or 0
+	self:UpdateVisibility(totalPer)
 	self.value = total
+	self.valuePer = totalPer
+	self.valueMax = maxTotal
 end
 
 local function Destroy(self)
