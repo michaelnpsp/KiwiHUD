@@ -20,7 +20,7 @@ local UnitIsUnit = UnitIsUnit
 local UnitCastingInfo = UnitCastingInfo or CastingInfo
 local UnitChannelInfo = UnitChannelInfo or ChannelInfo
 
-local unpack, tremove, tinsert, floor,  max = unpack, table.remove, table.insert, floor, max
+local next, unpack, tremove, tinsert, floor,  max = next, unpack, table.remove, table.insert, floor, max
 
 --====================================================================
 
@@ -420,6 +420,68 @@ do
 end
 
 --====================================================================
+-- Energy ticker
+--====================================================================
+
+local EnergyTicker_Register
+do
+	local POWER_ENERGY = Enum.PowerType.Energy
+	local GetTime = GetTime
+	local UnitPower = UnitPower
+	local frame
+	local bars = {}
+	local lastEnergy = 0
+	local lastTick = GetTime()
+
+	local function Destroy(self)
+		self.prototype.Destroy(self)
+		self.spark = Texture_Release(self.spark)
+		bars[self] = nil
+		if frame and not next(bars) then frame:Hide() end
+	end
+
+	local function Update(self)
+		local now = GetTime()
+	    local energy = UnitPower("player", POWER_ENERGY)
+		if energy>lastEnergy or now>=lastTick+2 then
+			lastEnergy, lastTick = energy, now
+		end
+		local p = (now - lastTick) / 2
+		if p<1 then
+			local offset = p * addon.db.height
+			for bar in next,bars do
+				local spark = bar.spark
+				spark:ClearAllPoints()
+				spark:SetPoint( 'BOTTOM', 0, offset )
+				spark:SetTexCoord( bar.coord1, bar.coord2, 0.975-p, 1-p)
+				spark:Show()
+			end
+		else
+			for bar in next,bars do
+				bar.spark:Hide()
+			end
+		end
+	end
+
+	function EnergyTicker_Register(bar)
+		if frame then
+			if not next(bars) then frame:Show() end
+		else
+			frame = CreateFrame('Frame')
+			frame:SetScript('OnUpdate', Update)
+		end
+		local tex = Texture_Create(bar, 'OVERLAY')
+		tex:SetTexture( addon.db.texfg )
+		tex:SetVertexColor(1,0,0,1)
+		tex:SetHeight(addon.db.height*0.025)
+		tex:SetWidth(addon.db.width)
+		bar.spark = tex
+		bar.Destroy = Destroy
+		bars[bar] = true
+	end
+end
+
+--====================================================================
 -- Power Bar
 --====================================================================
 
@@ -467,6 +529,8 @@ do
 		elseif db.unit == 'pet' then
 			self.UNIT_PET = self.Update
 			self:RegisterUnitEvent( "UNIT_PET", 'player' )
+		elseif db.unit == 'player' and (PlayerClass=='ROGUE' or PlayerClass=='DRUID') and db.tickerEnabled then
+			EnergyTicker_Register(self)
 		end
 		self.UNIT_DISPLAYPOWER = self.UpdateColor
 		self.UNIT_POWER_UPDATE = self.UpdateValue

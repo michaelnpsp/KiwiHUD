@@ -833,6 +833,25 @@ options.textColor = {
 	hidden = function() return not editedBar.textColor end,
 }
 
+-- Energy ticks
+
+options.energyTicksHeader = { type = "header", order = 300, name = 'Energy Ticker', hidden = function() return editedBar.type~='power' end }
+options.energyTicksEnabled = {
+	type = "toggle",
+	order = 305,
+	width = "full",
+	name = "Enable Ticker",
+	desc = "Display a spark to track energy ticks time.",
+	get = function()
+		return editedBar.tickerEnabled
+	end,
+	set = function ( _, value)
+		editedBar.tickerEnabled = value or nil
+		addon:RecreateBar(editedBarIndex)
+	end,
+	hidden = function() return editedBar.type~='power' end,
+}
+
 --------------------------------------------------------
 -- Databroker
 --------------------------------------------------------
