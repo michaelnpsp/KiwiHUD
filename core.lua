@@ -430,15 +430,9 @@ do
 	local UnitPower = UnitPower
 	local frame
 	local bars = {}
+	local lastP = 1
 	local lastEnergy = 0
 	local lastTick = GetTime()
-
-	local function Destroy(self)
-		self.prototype.Destroy(self)
-		self.spark = Texture_Release(self.spark)
-		bars[self] = nil
-		if frame and not next(bars) then frame:Hide() end
-	end
 
 	local function Update(self)
 		local now = GetTime()
@@ -450,17 +444,27 @@ do
 		if p<1 then
 			local offset = p * addon.db.height
 			for bar in next,bars do
-				local spark = bar.spark
-				spark:ClearAllPoints()
-				spark:SetPoint( 'BOTTOM', 0, offset )
-				spark:SetTexCoord( bar.coord1, bar.coord2, 0.975-p, 1-p)
-				spark:Show()
+				if bar:IsVisible() then
+					local spark = bar.spark
+					spark:ClearAllPoints()
+					spark:SetPoint( 'BOTTOM', 0, offset )
+					spark:SetTexCoord( bar.coord1, bar.coord2, 0.975-p, 1-p)
+					spark:Show()
+				end
 			end
-		else
+		elseif lastP<1 or true then
 			for bar in next,bars do
 				bar.spark:Hide()
 			end
 		end
+		lastP = p
+	end
+
+	local function Destroy(self)
+		self.prototype.Destroy(self)
+		self.spark = Texture_Release(self.spark)
+		bars[self] = nil
+		if frame and not next(bars) then frame:Hide() end
 	end
 
 	function EnergyTicker_Register(bar)
@@ -872,6 +876,7 @@ end
 --====================================================================
 
 do
+	local Melee
 	local Ranges
 	local UnitIsFriend = UnitIsFriend
 	local IsItemInRange = IsItemInRange
@@ -933,6 +938,7 @@ do
 				[1184 ] = 40, -- Deprecated Scarlet Badge
 			},
 		}
+		Melee = GetSpellInfo( ({ROGUE=2098})[PlayerClass] or 0 )
 	end
 
 	local function Destroy(self)
@@ -941,17 +947,20 @@ do
 	end
 
 	local function Update(self)
-		local ranges = Ranges[ UnitIsFriend('player','target') ]
-		local from, to
-		for i=1,#ranges do
-			to = ranges[i]
-			if IsItemInRange(to, 'target') then break end
-			from, to = to, nil
-		end
-		if to then
-			self.Text:SetFormattedText( '%d-%d', ranges[from] or 0, ranges[to] )
+		if Melee and IsSpellInRange(Melee)==1 then
+			self.Text:SetText( '0-5' )
 		else
-			self.Text:SetFormattedText( '%d+', ranges[from] or 100 )
+			local ranges, from, to = Ranges[ UnitIsFriend('player','target') ]
+			for i=1,#ranges do
+				to = ranges[i]
+				if IsItemInRange(to, 'target') then break end
+				from, to = to, nil
+			end
+			if to then
+				self.Text:SetFormattedText( '%d-%d', ranges[from] or 0, ranges[to] )
+			else
+				self.Text:SetFormattedText( '%d+', ranges[from] or 100 )
+			end
 		end
 	end
 
