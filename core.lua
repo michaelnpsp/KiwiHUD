@@ -880,6 +880,7 @@ do
 	local Ranges
 	local UnitIsFriend = UnitIsFriend
 	local IsItemInRange = IsItemInRange
+	local IsSpellInRange = IsSpellInRange
 	if isRetail then
 		Ranges = {
 			[false] = { -- hostile
