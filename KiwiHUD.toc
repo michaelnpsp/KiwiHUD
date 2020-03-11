@@ -1,9 +1,9 @@
 #@retail@
-## Interface: 80205
+## Interface: 80300
 ## X-WoW-Project: retail
 #@end-retail@
 #@non-retail@
-# ## Interface: 11303
+# ## Interface: 11304
 ## X-WoW-Project: classic
 #@end-non-retail@
 ## Title: |cFF7FFF72Kiwi|r HUD
