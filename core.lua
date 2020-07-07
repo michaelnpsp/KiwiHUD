@@ -27,6 +27,7 @@ local next, unpack, tremove, tinsert, floor,  max = next, unpack, table.remove, 
 local InCombat
 local AlphaCombat
 local PlayerClass = select(2,UnitClass('player'))
+local PlayerGUID  = UnitGUID('player')
 local isRetail = not addon.isClassic
 
 --====================================================================
@@ -337,7 +338,7 @@ do
 		if self.Text then
 			if valueMax then -- value & valueMax
 				self.Text:SetFormattedText(value)
-			else -- percent, no valueMAx
+			else -- percent, no valueMax
 				self.Text:SetFormattedText("%.0f%%",value*100)
 			end
 		end
@@ -425,16 +426,34 @@ end
 
 local EnergyTicker_Register
 do
+	local RESET_SPELLS = { ['Maul'] = true, ['Raptor Strike'] = true, ['Cleave'] = true, ['Slam'] = true, ['Heroic Strike'] = true }
 	local POWER_ENERGY = Enum.PowerType.Energy
+	local POWER_RAGE   = Enum.PowerType.Rage
+	local POWER_MANA   = Enum.PowerType.Mana
 	local GetTime = GetTime
 	local UnitPower = UnitPower
+	local UnitAttackSpeed = UnitAttackSpeed
+	local CombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
 	local frame
 	local bars = {}
 	local lastP = 1
 	local lastEnergy = 0
 	local lastTick = GetTime()
+	local lastSwing, weaponSpeed
 
-	local function Update(self)
+	local function ThemeSparks(r,g,b,a)
+		for bar in next,bars do
+			bar.spark:SetVertexColor(r,g,b,a)
+		end
+	end
+
+	local function HideSparks()
+		for bar in next,bars do
+			bar.spark:Hide()
+		end
+	end
+
+	local function UpdateEnergy(self)
 		local now = GetTime()
 	    local energy = UnitPower("player", POWER_ENERGY)
 		if energy>lastEnergy or now>=lastTick+2 then
@@ -452,12 +471,64 @@ do
 					spark:Show()
 				end
 			end
-		elseif lastP<1 or true then
-			for bar in next,bars do
-				bar.spark:Hide()
-			end
+		elseif lastP<1 then -- or True ???
+			HideSparks()
 		end
 		lastP = p
+	end
+
+	local function UpdateSwing(self)
+		if lastSwing then
+			local p = (GetTime() - lastSwing) / weaponSpeed
+			if p<1 then
+				local offset = p * addon.db.height
+				for bar in next,bars do
+					if bar:IsVisible() then
+						local spark = bar.spark
+						spark:ClearAllPoints()
+						spark:SetPoint( 'BOTTOM', 0, offset )
+						spark:SetTexCoord( bar.coord1, bar.coord2, 0.975-p, 1-p)
+						spark:Show()
+					end
+				end
+			else
+				lastSwing = nil
+				HideSparks()
+			end
+		end
+	end
+
+	local function ResetSwing()
+		lastSwing   = GetTime()
+		weaponSpeed = UnitAttackSpeed('player')
+	end
+
+	local function CombatLogEvent(self)
+		local _, event, _, sguid, _, _, _, dguid, _, _, _, _, isOffHandOrSpell, _ , _, _, _, _, _, _, isOffHand = CombatLogGetCurrentEventInfo()
+		if PlayerGUID==sguid then
+			if (event == "SWING_DAMAGE" and not isOffHand) or
+			   (event == "SWING_MISSED" and not isOffHandOrSpell ) or
+			   ((event == "SPELL_DAMAGE" or event == "SPELL_MISSED") and RESET_SPELLS[isOffHandOrSpell]) then
+				ResetSwing()
+			end
+		end
+	end
+
+	local function UpdateVisibility(self)
+		local power   = UnitPowerType('player')
+		local tSwing  = PlayerClass=='HUNTER' or (PlayerClass=='DRUID' and power == POWER_RAGE)
+		local tEnergy = power == POWER_ENERGY
+		if tSwing then
+			frame:SetScript('OnUpdate', UpdateSwing)
+			frame:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
+			ThemeSparks(1,1,1,1)
+		elseif tEnergy then
+			frame:SetScript( 'OnUpdate', UpdateEnergy)
+			frame:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
+			ThemeSparks(1,0,0,1)
+		end
+		HideSparks()
+		frame:SetShown(tEnergy or tSwing)
 	end
 
 	local function Destroy(self)
@@ -472,13 +543,21 @@ do
 			if not next(bars) then frame:Show() end
 		else
 			frame = CreateFrame('Frame')
-			frame:SetScript('OnUpdate', Update)
+			if PlayerClass == 'DRUID' or PlayerClass == 'HUNTER' or PlayerClass == 'WARRIOR' then
+				frame:SetScript('OnEvent', OnEvent)
+				frame:RegisterEvent('UNIT_DISPLAYPOWER')
+				frame.UNIT_DISPLAYPOWER = UpdateVisibility
+				frame.COMBAT_LOG_EVENT_UNFILTERED = CombatLogEvent
+				UpdateVisibility()
+			elseif PlayerClass == 'ROGUE' or PlayerClass == 'MONK' then
+				frame:SetScript('OnUpdate',UpdateEnergy)
+			end
 		end
 		local tex = Texture_Create(bar, 'OVERLAY')
 		tex:SetTexture( addon.db.texfg )
-		tex:SetVertexColor(1,0,0,1)
 		tex:SetHeight(addon.db.height*0.025)
 		tex:SetWidth(addon.db.width)
+		tex:SetVertexColor(1,0,0,1)
 		bar.spark = tex
 		bar.Destroy = Destroy
 		bars[bar] = true
@@ -524,6 +603,10 @@ do
 		self:RegisterUnitEvent("UNIT_POWER_UPDATE", db.unit)
 		self:RegisterUnitEvent("UNIT_MAXPOWER", db.unit)
 		self:RegisterUnitEvent("UNIT_DISPLAYPOWER", db.unit)
+		if PlayerClass=='DRUID' then
+			self:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+			self.UPDATE_SHAPESHIFT_FORM = self.UpdateValue
+		end
 		if db.unit == 'target' then
 			self.PLAYER_TARGET_CHANGED = self.Update
 			self:RegisterEvent( "PLAYER_TARGET_CHANGED" )
@@ -556,10 +639,6 @@ do
 	local UnitPowerType = UnitPowerType
 	local GetSpecialization = isRetail and GetSpecialization or function() end
 
-	local function UpdateColor(self)
-		self:SetColor( PowerColors[POWER_MANA] )
-	end
-
 	local function UpdateValue(self)
 		local show = UnitPowerType('player') ~= POWER_MANA and (PlayerClass~='MONK' or GetSpecialization() == SPEC_MONK_MISTWEAVER)
 		if show then
@@ -567,6 +646,11 @@ do
 			self:SetValue( m>0 and UnitPower('player', POWER_MANA) / m or 0 )
 		end
 		self:SetShown(show)
+	end
+
+	local function UpdateColor(self)
+		self:SetColor( PowerColors[POWER_MANA] )
+		UpdateValue(self)
 	end
 
 	local embed = { UpdateColor = UpdateColor, UpdateValue = UpdateValue }
