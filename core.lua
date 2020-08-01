@@ -329,7 +329,7 @@ do
 	end
 
 	function class:SetValue(value, valueMax)
-		local pvalue = valueMax and value/valueMax or value
+		local pvalue = (valueMax and valueMax>0 and value/valueMax) or value
 		local tex = self.textures[1]
 		tex:SetHeight( self.height * pvalue )
 		tex:SetTexCoord( self.coord1, self.coord2, 1-pvalue, 1 )
@@ -359,7 +359,7 @@ do
 	function class:UpdateVisibility(value) -- value == 0 to 1
 		value = value or self.valuePer
 		local hideValue = self.hideValue
-		if hideValue then
+		if value and hideValue then
 			self:SetShown( InCombat or value ~= hideValue )
 		end
 	end
@@ -641,11 +641,12 @@ do
 
 	local function UpdateValue(self)
 		local show = UnitPowerType('player') ~= POWER_MANA and (PlayerClass~='MONK' or GetSpecialization() == SPEC_MONK_MISTWEAVER)
-		if show then
-			local m = UnitPowerMax('player', POWER_MANA)
-			self:SetValue( m>0 and UnitPower('player', POWER_MANA) / m or 0 )
-		end
 		self:SetShown(show)
+		if show then
+			self:SetValue( UnitPower('player', POWER_MANA), UnitPowerMax('player', POWER_MANA) )
+		else
+			self.value, self.valuePer =  nil, nil
+		end
 	end
 
 	local function UpdateColor(self)
@@ -663,9 +664,13 @@ do
 			self:RegisterUnitEvent("UNIT_POWER_UPDATE", 'player')
 			self:RegisterUnitEvent("UNIT_MAXPOWER", 'player')
 			self:RegisterUnitEvent("UNIT_DISPLAYPOWER", 'player')
-			self.UNIT_DISPLAYPOWER = self.UpdateColor
 			self.UNIT_POWER_UPDATE = self.UpdateValue
 			self.UNIT_MAXPOWER     = self.UpdateValue
+			self.UNIT_DISPLAYPOWER = self.UpdateColor
+			if PlayerClass=='DRUID' then
+				self:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+				self.UPDATE_SHAPESHIFT_FORM = self.UpdateColor
+			end
 		end
 		self:Update()
 		return self
