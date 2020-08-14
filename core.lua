@@ -440,6 +440,7 @@ do
 	local lastEnergy = 0
 	local lastTick = GetTime()
 	local lastSwing, weaponSpeed
+	local lastCast
 
 	local function ThemeSparks(r,g,b,a)
 		for bar in next,bars do
@@ -514,10 +515,33 @@ do
 		end
 	end
 
+	local function UpdateMana()
+		if lastCast then
+			local p = (GetTime() - lastCast) / 5
+			if p<1 then
+				local offset = p * addon.db.height
+				for bar in next,bars do
+					if bar:IsVisible() then
+						local spark = bar.spark
+						spark:ClearAllPoints()
+						spark:SetPoint( 'BOTTOM', 0, offset )
+						spark:SetTexCoord( bar.coord1, bar.coord2, 0.975-p, 1-p)
+						spark:Show()
+					end
+				end
+			else
+				frame:Hide()
+				HideSparks()
+				lastCast = nil
+			end
+		end
+	end
+
 	local function UpdateVisibility(self)
 		local power   = UnitPowerType('player')
 		local tSwing  = PlayerClass=='HUNTER' or (PlayerClass=='DRUID' and power == POWER_RAGE)
-		local tEnergy = power == POWER_ENERGY
+		local tEnergy = power==POWER_ENERGY
+		local tMP5    = (not isRetail) and PlayerClass~='HUNTER' and power==POWER_MANA
 		if tSwing then
 			frame:SetScript('OnUpdate', UpdateSwing)
 			frame:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
@@ -526,9 +550,19 @@ do
 			frame:SetScript( 'OnUpdate', UpdateEnergy)
 			frame:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
 			ThemeSparks(1,0,0,1)
+		elseif tMP5 then
+			frame:SetScript( 'OnUpdate', UpdateMana)
+			frame:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
+			frame:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
+			ThemeSparks(1,0,0,1)
 		end
 		HideSparks()
 		frame:SetShown(tEnergy or tSwing)
+	end
+
+	local function DisableMP5(self)
+		lastCast = GetTime()
+		frame:Show()
 	end
 
 	local function Destroy(self)
@@ -543,14 +577,16 @@ do
 			if not next(bars) then frame:Show() end
 		else
 			frame = CreateFrame('Frame')
-			if PlayerClass == 'DRUID' or PlayerClass == 'HUNTER' or PlayerClass == 'WARRIOR' then
+			if PlayerClass == 'ROGUE' or PlayerClass == 'MONK' then
+				frame:SetScript('OnUpdate',UpdateEnergy)
+			-- elseif PlayerClass == 'DRUID' or PlayerClass == 'HUNTER' or PlayerClass == 'WARRIOR' then
+			else
 				frame:SetScript('OnEvent', OnEvent)
 				frame:RegisterEvent('UNIT_DISPLAYPOWER')
 				frame.UNIT_DISPLAYPOWER = UpdateVisibility
 				frame.COMBAT_LOG_EVENT_UNFILTERED = CombatLogEvent
+				frame.UNIT_SPELLCAST_SUCCEEDED = DisableMP5
 				UpdateVisibility()
-			elseif PlayerClass == 'ROGUE' or PlayerClass == 'MONK' then
-				frame:SetScript('OnUpdate',UpdateEnergy)
 			end
 		end
 		local tex = Texture_Create(bar, 'OVERLAY')
