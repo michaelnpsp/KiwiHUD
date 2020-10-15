@@ -28,7 +28,8 @@ local InCombat
 local AlphaCombat
 local PlayerClass = select(2,UnitClass('player'))
 local PlayerGUID  = UnitGUID('player')
-local isRetail = not addon.isClassic
+local isClassic = addon.isClassic
+local isRetail = not isClassic
 
 --====================================================================
 
@@ -807,7 +808,7 @@ do
 		end
 		self:SetScript("OnEvent", OnEvent)
 		self:RegisterUnitEvent("UNIT_HEALTH", db.unit)
-		self:RegisterUnitEvent("UNIT_HEALTH_FREQUENT", db.unit)
+		if isClassic then self:RegisterUnitEvent("UNIT_HEALTH_FREQUENT", db.unit) end
 		self:RegisterUnitEvent("UNIT_MAXHEALTH", db.unit)
 		if db.unit == 'target' then
 			self.PLAYER_TARGET_CHANGED = self.Update
@@ -820,7 +821,7 @@ do
 			self:RegisterUnitEvent( "UNIT_PET", 'player' )
 		end
 		self.UNIT_HEALTH = self.UpdateValue
-		self.UNIT_HEALTH_FREQUENT = self.UpdateValue
+		if isClassic then self.UNIT_HEALTH_FREQUENT = self.UpdateValue end
 		self.UNIT_MAXHEALTH = self.UpdateValue
 		self:Update()
 		return self
