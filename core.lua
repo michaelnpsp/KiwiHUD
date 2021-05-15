@@ -6,7 +6,7 @@ local addonName = ...
 
 local addon = CreateFrame("Frame")
 addon.addonName = addonName
-addon.isClassic = select(4, GetBuildInfo())<20000
+addon.isClassic = select(4, GetBuildInfo())<30000
 _G[addonName] = addon
 
 --====================================================================
