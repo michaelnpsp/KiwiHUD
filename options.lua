@@ -279,8 +279,8 @@ Opt_SetupOption( 'General', 'Bars Opacity', {
 
 -- Colors Setup
 do
-	SEPARATOR = { type = 'description' , order = 149, name = '' }
-	RESET = {
+	local SEPARATOR = { type = 'description' , order = 149, name = '' }
+	local RESET = {
 		type = 'execute',
 		order = 150,
 		width = "half",
