@@ -580,7 +580,6 @@ do
 			frame = CreateFrame('Frame')
 			if PlayerClass == 'ROGUE' or PlayerClass == 'MONK' then
 				frame:SetScript('OnUpdate',UpdateEnergy)
-			-- elseif PlayerClass == 'DRUID' or PlayerClass == 'HUNTER' or PlayerClass == 'WARRIOR' then
 			else
 				frame:SetScript('OnEvent', OnEvent)
 				frame:RegisterEvent('UNIT_DISPLAYPOWER')
@@ -606,6 +605,7 @@ end
 --====================================================================
 
 do
+	local GetTime = GetTime
 	local UnitPower = UnitPower
 	local UnitPowerMax = UnitPowerMax
 	local UnitPowerType = UnitPowerType
@@ -622,10 +622,11 @@ do
 		if powerType == nil or typ == powerType then
 			local m = UnitPowerMax(u)
 			if m>0 then
+				local p = UnitPower(u)
 				if m>150 then
-					self:SetValue( UnitPower(u) / m )
+					self:SetValue( p / m )
 				else
-					self:SetValue( UnitPower(u), m )
+					self:SetValue( p, m )
 				end
 			end
 		end
@@ -653,8 +654,10 @@ do
 		elseif db.unit == 'pet' then
 			self.UNIT_PET = self.Update
 			self:RegisterUnitEvent( "UNIT_PET", 'player' )
-		elseif db.unit == 'player' and (PlayerClass=='ROGUE' or PlayerClass=='DRUID') and db.tickerEnabled then
-			EnergyTicker_Register(self)
+		elseif db.unit == 'player' and (PlayerClass=='ROGUE' or PlayerClass=='DRUID') then
+			if db.tickerEnabled then
+				EnergyTicker_Register(self)
+			end
 		end
 		self.UNIT_DISPLAYPOWER = self.UpdateColor
 		self.UNIT_POWER_UPDATE = self.UpdateValue
