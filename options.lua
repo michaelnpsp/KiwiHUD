@@ -864,7 +864,7 @@ local ldb = LibStub("LibDataBroker-1.1", true):NewDataObject( addon.addonName, {
 		addon:OnChatCommand("kiwihud")
 	end,
 	OnTooltipShow = function(tooltip)
-		tooltip:AddLine("KiwiHUD v" .. GetAddOnMetadata(addon.addonName, "Version") )
+		tooltip:AddDoubleLine("KiwiHUD", addon.versionToc)
 		tooltip:AddLine("Displays HUD bars around the player.", 1,1,1, true)
 		tooltip:AddLine("|cFFff4040Click|r to open configuration menu", 0.2, 1, 0.2)
 	end,

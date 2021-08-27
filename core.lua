@@ -9,6 +9,9 @@ addon.addonName = addonName
 addon.isClassic = select(4, GetBuildInfo())<30000
 _G[addonName] = addon
 
+local versionToc = GetAddOnMetadata(addonName,'Version')
+addon.versionToc = versionToc=='@project-version@' and 'Dev' or 'v'..versionToc
+
 --====================================================================
 
 local Media  = LibStub("LibSharedMedia-3.0", true)
