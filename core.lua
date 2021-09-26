@@ -1052,7 +1052,7 @@ do
 			if threatPct then
 				if ceil(threatPct)<100 then
 					if threatValue<=0 then -- estimate threat of tank if player has no threat
-						local _, _, _, _, threatValue = UnitDetailedThreatSituation("targettarget", threatUnit)
+						local _, _, _, _, threatValue = UnitDetailedThreatSituation("targettarget", 'target')
 						if threatValue then
 							local distMult = CheckInteractDistance("target",3) and 1.1 or 1.3
 							threatValue = ceil( distMult * threatValue/10000 ) / 10
