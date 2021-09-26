@@ -527,18 +527,15 @@ bars.createCancel = {
 	hidden = function() return not NewBarType end,
 }
 
-bars.delete = {
+bars.test= {
 	type = 'execute',
-	order = 1,
-	width = "half",
-	name = 'Delete',
-	desc = 'Delete the selected Bar.',
+	order = 2,
+	width = 0.6,
+	name = 'Test Mode',
+	desc = 'Test Mode.',
 	func = function()
-		table.remove(addon.db.bars, editedBarIndex)
-		addon:DestroyBar(editedBarIndex)
-		MakeBarsOptions()
+		addon:ToggleTestMode()
 	end,
-	confirm = function() return 'Are you sure you want to delete the selected item?' end,
 	hidden = function() return #addon.db.bars==0 or NewBarType end,
 }
 
@@ -852,6 +849,23 @@ options.energyTicksEnabled = {
 		addon:RecreateBar(editedBarIndex)
 	end,
 	hidden = function() return editedBar.type~='power' end,
+}
+
+
+options.deleteHeader = { type = "header", order = 499, name = ''}
+options.delete = {
+	type = 'execute',
+	order = 500,
+	width = 'full',
+	name = 'Delete this Widget',
+	desc = 'Delete this Widget',
+	func = function()
+		table.remove(addon.db.bars, editedBarIndex)
+		addon:DestroyBar(editedBarIndex)
+		MakeBarsOptions()
+	end,
+	confirm = function() return 'Are you sure you want to delete this widget?' end,
+	hidden = function() return #addon.db.bars==0 or NewBarType end,
 }
 
 --------------------------------------------------------

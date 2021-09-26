@@ -205,6 +205,23 @@ end
 addon.PLAYER_REGEN_ENABLED = addon.PLAYER_REGEN_DISABLED
 
 --====================================================================
+-- Enable test mode
+--====================================================================
+
+function addon:ToggleTestMode()
+	self.testModeEnabled = not self.testModeEnabled or nil
+	for _,bar in ipairs(self.bars) do
+		if bar.TestMode then
+			if self.testModeEnabled  then
+				bar:TestMode()
+			else
+				bar:Update()
+			end
+		end
+	end
+end
+
+--====================================================================
 -- UI elements factories
 --====================================================================
 
@@ -387,6 +404,14 @@ do
 	end
 
 	function class:UpdateDB()
+	end
+
+	function class:TestMode()
+		if self.db.textEnabled and (self.Text:GetText() or '')=='' then
+			self.Text:SetText('999')
+		end
+		self:SetAlpha(1)
+		self:Show()
 	end
 
 	function Bar_Create(db, embed)
@@ -916,6 +941,7 @@ do
 
 	addon.setupFunc['cast'] = function(db)
 		local self = Bar_Create(db)
+		self.TestMode = nil
 		self.textures[1]:Show()
 		self:SetScript("OnUpdate", OnUpdate)
 		self:SetScript("OnEvent", OnEvent)
@@ -992,6 +1018,7 @@ do
 
 	addon.setupFunc['gcd'] = function(db)
 		local self = Bar_Create(db, embed )
+		self.TestMode = nil
 		self.textures[1]:Show()
 		self:SetScript("OnUpdate", OnUpdate)
 		self:SetScript("OnEvent", CastStart)
@@ -1056,7 +1083,11 @@ do
 	local function UpdateDB()
 	end
 
-	local embed = { Destroy = Destroy, Update = Update, Layout = Layout, UpdateDB = UpdateDB }
+	local function TestMode(self)
+		self.Text:SetText("|cffFF0000-- AGGRO --|r")
+	end
+
+	local embed = { Destroy = Destroy, Update = Update, Layout = Layout, UpdateDB = UpdateDB, TestMode = TestMode }
 
 	addon.setupFunc['threat'] = function(db)
 		local self = Frame_Create('threat')
@@ -1191,10 +1222,15 @@ do
 		self.Text:SetTextColor( unpack(self.db.textColor or ColorDefault) )
 	end
 
+	local function TestMode(self)
+		self.Text:SetText('25-30')
+		self:Show()
+	end
+
 	local function UpdateDB()
 	end
 
-	local embed = { Destroy = Destroy, Update = Update, Layout = Layout, UpdateDB = UpdateDB }
+	local embed = { Destroy = Destroy, Update = Update, Layout = Layout, UpdateDB = UpdateDB, TestMode = TestMode }
 
 	addon.setupFunc['range'] = function(db)
 		local self = Frame_Create('range')
@@ -1234,10 +1270,11 @@ function addon:CreateBars()
 end
 
 function addon:LayoutBars()
+	print("Layout Bars")
 	for _,bar in ipairs(self.bars) do
 		bar:UpdateDB()
 		bar:Layout()
-		bar:Update()
+		-- bar:Update()
 	end
 end
 
@@ -1263,7 +1300,7 @@ function addon:LayoutBar(index)
 	local bar = self.bars[index]
 	bar:UpdateDB()
 	bar:Layout()
-	bar:Update()
+	-- bar:Update()
 end
 
 function addon:DestroyBar(index)
