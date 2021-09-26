@@ -1004,6 +1004,82 @@ do
 end
 
 --====================================================================
+-- Threat Text
+--====================================================================
+
+do
+	local ceil = math.ceil
+	local UnitCanAttack = UnitCanAttack
+	local GetNumGroupMembers = GetNumGroupMembers
+	local CheckInteractDistance = CheckInteractDistance
+	local UnitDetailedThreatSituation = UnitDetailedThreatSituation
+
+	local function Destroy(self)
+		Font_Release(self.Text)
+		Frame_Release(self)
+	end
+
+	local function Update(self,event)
+		if GetNumGroupMembers()>0 and UnitCanAttack("player", 'target') then
+			local _, threatStatus, threatPct, rawThreatPct, threatValue = UnitDetailedThreatSituation("player",'target')
+			if threatPct then
+				if ceil(threatPct)<100 then
+					if threatValue<=0 then -- estimate threat of tank if player has no threat
+						local _, _, _, _, threatValue = UnitDetailedThreatSituation("targettarget", threatUnit)
+						if threatValue then
+							local distMult = CheckInteractDistance("target",3) and 1.1 or 1.3
+							threatValue = ceil( distMult * threatValue/10000 ) / 10
+							if threatValue<1 then threatValue = 0 end
+						else
+							threatValue = 0
+						end
+					else
+						threatValue = (threatValue/threatPct - threatValue/100) / 1000
+					end
+					self.Text:SetFormattedText( "<|cff%s-%.1fk|r>", threatValue<5 and 'FF0000' or '00FF00', threatValue )
+				else
+					self.Text:SetText( "|cffFF0000-- AGGRO --|r" )
+				end
+				return
+			end
+		end
+		self.Text:SetText( "" )
+	end
+
+	local function Layout(self)
+		self.Text:ClearAllPoints()
+		self.Text:SetPoint( self.db.textAlign or 'CENTER', UIParent, 'CENTER', self.db.textOffsetX, self.db.textOffsetY )
+		self.Text:SetFont( Media:Fetch('font', self.db.textFont) or STANDARD_TEXT_FONT, self.db.textFontSize or 14, 'OUTLINE' )
+		self.Text:SetTextColor( unpack(self.db.textColor or ColorDefault) )
+	end
+
+	local function UpdateDB()
+	end
+
+	local embed = { Destroy = Destroy, Update = Update, Layout = Layout, UpdateDB = UpdateDB }
+
+	addon.setupFunc['threat'] = function(db)
+		local self = Frame_Create('threat')
+		self.db = db
+		Embed(self, embed)
+		-- text
+		local text = Font_Create(self,'ARTWORK')
+		text:SetShadowOffset(1,-1)
+		text:SetShadowColor(0,0,0, 1)
+		text:Show()
+		self.Text = text
+		-- events
+		self:RegisterEvent( "PLAYER_TARGET_CHANGED" )
+		self:RegisterEvent( "UNIT_THREAT_LIST_UPDATE" )
+		self:SetScript("OnEvent", Update)
+		Layout(self)
+		Update(self)
+		self:Show()
+		return self
+	end
+end
+
+--====================================================================
 -- Range Text
 --====================================================================
 

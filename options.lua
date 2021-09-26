@@ -33,6 +33,7 @@ addon.setupName = {
 	manaalt   = 'Mana Alt [player]',
 	myshields = "Shields Bar [player]",
 	range     = "Range",
+	threat    = 'Threat',
 }
 
 addon.setupDefaults = {
@@ -43,6 +44,7 @@ addon.setupDefaults = {
 	cast      = { type = 'cast',   unit = 'player', index = -1, color = {1,1,0,1}, },
 	myshields = { type = 'myshields', index = -1, hideValue = 0, textEnabled = false, color = {1,1,1,1}, },
 	range     = { type = 'range', textOffsetX = 0, textOffsetY = 0, textAnchor = 'CENTER', textAlign = 'CENTER', textFontSize = 16, textFont =  Media.DefaultMedia.font, textColor = {1,1,1,1} },
+	threat    = { type = 'threat', textOffsetX = 0, textOffsetY = 32, textAnchor = 'CENTER', textAlign = 'CENTER', textFontSize = 12, textFont =  Media.DefaultMedia.font, textColor = {1,1,1,1} },
 }
 
 --------------------------------------------------------
