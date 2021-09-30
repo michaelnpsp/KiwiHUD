@@ -164,6 +164,15 @@ local function FillColorsTable(dst, src, override)
 	end
 end
 
+local function CreateTimer(frame, duration, func)
+	local timer = frame:CreateAnimationGroup()
+	timer.anim = timer:CreateAnimation()
+	timer.anim:SetDuration(duration)
+	timer:SetLooping("REPEAT")
+	timer:SetScript("OnLoop", func)
+	return timer
+end
+
 --====================================================================
 -- First Run
 --====================================================================
@@ -1035,42 +1044,35 @@ end
 --====================================================================
 
 do
-	local ceil = math.ceil
 	local UnitCanAttack = UnitCanAttack
 	local GetNumGroupMembers = GetNumGroupMembers
 	local CheckInteractDistance = CheckInteractDistance
 	local UnitDetailedThreatSituation = UnitDetailedThreatSituation
 
 	local function Destroy(self)
+		self.timer:Stop()
 		Font_Release(self.Text)
 		Frame_Release(self)
 	end
 
-	local function Update(self,event)
-		if GetNumGroupMembers()>0 and UnitCanAttack("player", 'target') then
-			local _, threatStatus, threatPct, rawThreatPct, threatValue = UnitDetailedThreatSituation("player",'target')
-			if threatPct then
-				if ceil(threatPct)<100 then
-					if threatValue<=0 then -- estimate threat of tank if player has no threat
-						local _, _, _, _, threatValue = UnitDetailedThreatSituation("targettarget", 'target')
-						if threatValue then
-							local distMult = CheckInteractDistance("target",3) and 1.1 or 1.3
-							threatValue = ceil( distMult * threatValue/10000 ) / 10
-							if threatValue<1 then threatValue = 0 end
-						else
-							threatValue = 0
-						end
-					else
-						threatValue = (threatValue/threatPct - threatValue/100) / 1000
-					end
-					self.Text:SetFormattedText( "<|cff%s-%.1fk|r>", threatValue<5 and 'FF0000' or '00FF00', threatValue )
-				else
-					self.Text:SetText( "|cffFF0000-- AGGRO --|r" )
+	local function Update(self)
+		if UnitCanAttack("player", 'target') then
+			local _, _, threatPct, _, threatValue = UnitDetailedThreatSituation("player",'target')
+			if threatPct==100 then -- 100=>unit is tanking
+				self.Text:SetText( "|cffFF0000-- AGGRO --|r" )
+			else
+				if (threatPct or 0)>0 and threatValue>0 then -- threatPct can be zero in retail when unit is not tanking!
+					threatValue = threatValue/threatPct - threatValue/100
+				else -- calculate tank threat if player has no threat or threatPct is zero or nil
+					local _, _, _, _, tankThreatValue = UnitDetailedThreatSituation('targettarget', 'target')
+					local distMult = CheckInteractDistance('target',3) and 1.1 or 1.3
+					threatValue = ( distMult * (tankThreatValue or 0) - (threatValue or 0) ) / 100
 				end
-				return
+				self.Text:SetFormattedText( "<|cff%s-%.1fk|r>", threatValue<5000 and 'FF8000' or '00FF00', threatValue/1000 )
 			end
+		else
+			self.Text:SetText( "" )
 		end
-		self.Text:SetText( "" )
 	end
 
 	local function Layout(self)
@@ -1087,6 +1089,24 @@ do
 		self.Text:SetText("|cffFF0000-- AGGRO --|r")
 	end
 
+	local function CombatStart(self)
+		if GetNumGroupMembers()>0 then
+			self:RegisterEvent("PLAYER_TARGET_CHANGED")
+			self:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
+			self.timer:Play()
+			Update(self)
+		end
+	end
+
+	local function CombatEnd(self)
+		if self.timer:IsPlaying() then
+			self.Text:SetText("")
+			self:UnregisterEvent("PLAYER_TARGET_CHANGED")
+			self:UnregisterEvent("UNIT_THREAT_LIST_UPDATE")
+			self.timer:Stop()
+		end
+	end
+
 	local embed = { Destroy = Destroy, Update = Update, Layout = Layout, UpdateDB = UpdateDB, TestMode = TestMode }
 
 	addon.setupFunc['threat'] = function(db)
@@ -1099,10 +1119,15 @@ do
 		text:SetShadowColor(0,0,0, 1)
 		text:Show()
 		self.Text = text
+		-- timer
+		self.timer = self.timer or CreateTimer(self, 0.25, Update)
+		self.timer.Text = text -- used inside Update() function
 		-- events
-		self:RegisterEvent( "PLAYER_TARGET_CHANGED" )
-		self:RegisterEvent( "UNIT_THREAT_LIST_UPDATE" )
-		self:SetScript("OnEvent", Update)
+		self.PLAYER_REGEN_DISABLED = CombatStart
+		self.PLAYER_REGEN_ENABLED  = CombatEnd
+		self:RegisterEvent('PLAYER_REGEN_ENABLED')
+		self:RegisterEvent('PLAYER_REGEN_DISABLED')
+		self:SetScript("OnEvent", function(self, event) local f=self[event] or Update; f(self); end )
 		Layout(self)
 		Update(self)
 		self:Show()
@@ -1182,6 +1207,7 @@ do
 	end
 
 	local function Destroy(self)
+		self.timer:Stop()
 		Font_Release(self.Text)
 		Frame_Release(self)
 	end
@@ -1236,21 +1262,16 @@ do
 		local self = Frame_Create('range')
 		self.db = db
 		Embed(self, embed)
-		-- timer
-		local timer = self.timer or self:CreateAnimationGroup()
-		timer.animation = timer.animation or timer:CreateAnimation()
-		timer:SetLooping("REPEAT")
-		timer.animation:SetDuration(.1)
-		timer:SetScript("OnLoop", Update)
-		timer:Play()
-		self.timer = timer
 		-- text
 		local text = Font_Create(self,'ARTWORK')
 		text:SetShadowOffset(1,-1)
 		text:SetShadowColor(0,0,0, 1)
 		text:Show()
 		self.Text = text
-		self.timer.Text = text
+		-- timer
+		self.timer = self.timer or CreateTimer(self, 0.1, Update)
+		self.timer.Text = text -- used inside Update() function
+		self.timer:Play()
 		-- events
 		self:RegisterEvent( "PLAYER_TARGET_CHANGED" )
 		self:SetScript("OnEvent", Refresh)
@@ -1270,7 +1291,6 @@ function addon:CreateBars()
 end
 
 function addon:LayoutBars()
-	print("Layout Bars")
 	for _,bar in ipairs(self.bars) do
 		bar:UpdateDB()
 		bar:Layout()
@@ -1352,3 +1372,17 @@ addon.SchoolColors = SchoolColors
 addon.SCHOOL_COLORS = SCHOOL_COLORS
 
 --====================================================================
+--[[ DEBUG REMOVE
+do
+	local function Update()
+		if UnitExists('target') then
+			local _, _, threatPct1, _, threatValue1 = UnitDetailedThreatSituation('targettarget','target')
+			local _, _, threatPct2, _, threatValue2 = UnitDetailedThreatSituation('pet','target')
+			local _, _, threatPct3, _, threatValue3 = UnitDetailedThreatSituation('player','target')
+			print('/tank', threatPct1, threatValue1, '/player', threatPct3, threatValue3, '/pet', threatPct2, threatValue2 )
+		end
+		C_Timer.After(1,Update)
+	end
+	Update()
+end
+--]]
