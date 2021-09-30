@@ -1,11 +1,7 @@
-#@retail@
 ## Interface: 90100
-## X-WoW-Project: retail
-#@end-retail@
-#@non-retail@
-# ## Interface: 11306
-## X-WoW-Project: classic
-#@end-non-retail@
+## Interface-Retail: 90100
+## Interface-Classic: 11400
+## Interface-BCC: 20502
 ## Title: |cFF7FFF72Kiwi|r HUD
 ## Notes: Simple HUD for health, mana & cast
 ## Author: Michael
