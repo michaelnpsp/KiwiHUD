@@ -832,6 +832,25 @@ options.textColor = {
 	hidden = function() return not editedBar.textColor end,
 }
 
+-- Threat specific options
+
+options.threatHeader = { type = "header", order = 300, name = '', hidden = function() return editedBar.type~='threat' end }
+options.threatAlone = {
+	type = "toggle",
+	order = 305,
+	width = "full",
+	name = "Disable when solo",
+	desc = "Disable threat display when solo.",
+	get = function()
+		return editedBar.disableWhenSolo
+	end,
+	set = function ( _, value)
+		editedBar.disableWhenSolo = value or nil
+		addon:LayoutBar(editedBarIndex)
+	end,
+	hidden = function() return editedBar.type~='threat' end,
+}
+
 -- Energy ticks
 
 options.energyTicksHeader = { type = "header", order = 300, name = 'Energy Ticker', hidden = function() return editedBar.type~='power' end }

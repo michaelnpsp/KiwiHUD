@@ -1060,6 +1060,7 @@ do
 			local _, _, threatPct, _, threatValue = UnitDetailedThreatSituation("player",'target')
 			if threatPct==100 then -- 100=>unit is tanking
 				self.Text:SetText( "|cffFF0000-- AGGRO --|r" )
+				return
 			else
 				if (threatPct or 0)>0 and threatValue>0 then -- threatPct can be zero in retail when unit is not tanking!
 					threatValue = threatValue/threatPct - threatValue/100
@@ -1068,11 +1069,13 @@ do
 					local distMult = CheckInteractDistance('target',3) and 1.1 or 1.3
 					threatValue = ( distMult * (tankThreatValue or 0) - (threatValue or 0) ) / 100
 				end
-				self.Text:SetFormattedText( "<|cff%s-%.1fk|r>", threatValue<5000 and 'FF8000' or '00FF00', threatValue/1000 )
+				if threatValue>0 then
+					self.Text:SetFormattedText( "<|cff%s-%.1fk|r>", threatValue<5000 and 'FF8000' or '00FF00', threatValue/1000 )
+					return
+				end
 			end
-		else
-			self.Text:SetText( "" )
 		end
+		self.Text:SetText( "" )
 	end
 
 	local function Layout(self)
@@ -1090,7 +1093,7 @@ do
 	end
 
 	local function CombatStart(self)
-		if GetNumGroupMembers()>0 then
+		if (not self.db.disableWhenSolo) or GetNumGroupMembers()>0 then
 			self:RegisterEvent("PLAYER_TARGET_CHANGED")
 			self:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
 			self.timer:Play()
