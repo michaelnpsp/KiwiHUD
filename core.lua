@@ -494,7 +494,7 @@ do
 
 	local function UpdateEnergy(self)
 		local now = GetTime()
-	    local energy = UnitPower("player", POWER_ENERGY)
+	    local energy = UnitPower("player")
 		if energy>lastEnergy or now>=lastTick+2 then
 			lastEnergy, lastTick = energy, now
 		end
@@ -553,8 +553,8 @@ do
 		end
 	end
 
-	local function UpdateMana()
-		if lastCast then
+	local function UpdateMana(self)
+		if lastCast then -- tracks mana 5 seconds rule
 			local p = (GetTime() - lastCast) / 5
 			if p<1 then
 				local offset = p * addon.db.height
@@ -568,10 +568,14 @@ do
 					end
 				end
 			else
-				frame:Hide()
 				HideSparks()
 				lastCast = nil
+				lastTick = 0
+				lastEnergy = UnitPower("player")
+				frame:Show()
 			end
+		else -- tracks mana ticks every 2 seconds
+			UpdateEnergy(self)
 		end
 	end
 
@@ -589,6 +593,7 @@ do
 			frame:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
 			ThemeSparks(1,0,0,1)
 		elseif tMP5 then
+			lastEnergy = UnitPower("player")
 			frame:SetScript( 'OnUpdate', UpdateMana)
 			frame:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
 			frame:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
@@ -599,8 +604,10 @@ do
 	end
 
 	local function DisableMP5(self)
-		lastCast = GetTime()
-		frame:Show()
+		if UnitPower('player')<lastEnergy then -- only spells using mana
+			lastCast = GetTime()
+			frame:Show()
+		end
 	end
 
 	local function Destroy(self)
@@ -691,7 +698,7 @@ do
 		elseif db.unit == 'pet' then
 			self.UNIT_PET = self.Update
 			self:RegisterUnitEvent( "UNIT_PET", 'player' )
-		elseif db.unit == 'player' and (PlayerClass=='ROGUE' or PlayerClass=='DRUID') then
+		elseif db.unit == 'player' then
 			if db.tickerEnabled then
 				EnergyTicker_Register(self)
 			end
@@ -1375,17 +1382,3 @@ addon.SchoolColors = SchoolColors
 addon.SCHOOL_COLORS = SCHOOL_COLORS
 
 --====================================================================
---[[ DEBUG REMOVE
-do
-	local function Update()
-		if UnitExists('target') then
-			local _, _, threatPct1, _, threatValue1 = UnitDetailedThreatSituation('targettarget','target')
-			local _, _, threatPct2, _, threatValue2 = UnitDetailedThreatSituation('pet','target')
-			local _, _, threatPct3, _, threatValue3 = UnitDetailedThreatSituation('player','target')
-			print('/tank', threatPct1, threatValue1, '/player', threatPct3, threatValue3, '/pet', threatPct2, threatValue2 )
-		end
-		C_Timer.After(1,Update)
-	end
-	Update()
-end
---]]
