@@ -246,7 +246,10 @@ do
 			for spellId, data in pairs(absorbDb) do
 				data[ 9] = data[7] * min(1, 1 - (20 - data[6]) * .0375) -- healingMultiplierTot
 				data[10] = data[8] * ( data[2] + max(0,min(level,data[5])-data[4]) * data[3] ) -- baseAbsorb
-				absorbIdx[GetSpellInfo(spellId)] = schoolIdx[ data[1] ]
+				local name = GetSpellInfo(spellId)
+				if name then
+					absorbIdx[name] = schoolIdx[ data[1] ]
+				end
 			end
 		end
 	end
