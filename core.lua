@@ -6,11 +6,20 @@ local addonName = ...
 
 local addon = CreateFrame("Frame")
 addon.addonName = addonName
-addon.isClassic = select(4, GetBuildInfo())<30000
 _G[addonName] = addon
+
+--====================================================================
 
 local versionToc = GetAddOnMetadata(addonName,'Version')
 addon.versionToc = versionToc=='@project-version@' and 'Dev' or 'v'..versionToc
+
+--====================================================================
+
+local versionCli = select(4,GetBuildInfo())
+addon.isClassic = versionCli<30000 -- vanilla or tbc
+addon.isVanilla = versionCli<20000
+addon.isTBC     = versionCli>=20000 and versionCli<30000
+addon.isRetail  = versionCli>=90000
 
 --====================================================================
 
@@ -29,10 +38,11 @@ local next, unpack, tremove, tinsert, floor,  max = next, unpack, table.remove, 
 
 local InCombat
 local AlphaCombat
-local PlayerClass = select(2,UnitClass('player'))
-local PlayerGUID  = UnitGUID('player')
 local isClassic = addon.isClassic
-local isRetail = not isClassic
+local isRetail  = addon.isRetail
+local PlayerClass = select(2,UnitClass('player'))
+local PlayerGUID = UnitGUID('player')
+local isMaxLevel = UnitLevel('player') == (isTBC and 70 or 60)
 
 --====================================================================
 
@@ -1062,7 +1072,7 @@ do
 		Frame_Release(self)
 	end
 
-	local function Update(self)
+	local Update = isMaxLevel and function(self)
 		if UnitCanAttack("player", 'target') then
 			local _, _, threatPct, _, threatValue = UnitDetailedThreatSituation("player",'target')
 			if threatPct==100 then -- 100=>unit is tanking
@@ -1083,6 +1093,19 @@ do
 			end
 		end
 		self.Text:SetText( "" )
+	end or function(self)
+		if UnitCanAttack("player", 'target') then
+			local _, status, threatPct = UnitDetailedThreatSituation("player",'target')
+			if threatPct==100 then -- 100=>unit is tanking
+				self.Text:SetText( "|cffFF0000-- AGGRO --|r" )
+			elseif threatPct then
+				self.Text:SetFormattedText( "<|cff%s%d%%|r>", status==0 and '00FF00' or 'FF8000', threatPct )
+			else
+				self.Text:SetText('|cfffafa00 -- ????? --|r')
+			end
+		else
+			self.Text:SetText( "" )
+		end
 	end
 
 	local function Layout(self)
