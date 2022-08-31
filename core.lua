@@ -16,7 +16,7 @@ addon.versionToc = versionToc=='@project-version@' and 'Dev' or 'v'..versionToc
 --====================================================================
 
 local versionCli = select(4,GetBuildInfo())
-addon.isClassic = versionCli<30000 -- vanilla or tbc
+addon.isClassic = versionCli<40000 -- vanilla or tbc or wrath
 addon.isVanilla = versionCli<20000
 addon.isTBC     = versionCli>=20000 and versionCli<30000
 addon.isRetail  = versionCli>=90000
