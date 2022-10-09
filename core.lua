@@ -594,23 +594,27 @@ do
 		local tSwing  = PlayerClass=='HUNTER' or (PlayerClass=='DRUID' and power == POWER_RAGE)
 		local tEnergy = power==POWER_ENERGY
 		local tMP5    = (not isRetail) and PlayerClass~='HUNTER' and power==POWER_MANA
+		local visible = false
 		if tSwing then
 			frame:SetScript('OnUpdate', UpdateSwing)
 			frame:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
 			ThemeSparks(1,1,1,1)
-		elseif tEnergy then
+			visible = true
+		elseif tEnergy and versionCli<30000 then
 			frame:SetScript( 'OnUpdate', UpdateEnergy)
 			frame:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
 			ThemeSparks(1,0,0,1)
-		elseif tMP5 then
+			visible = true
+		elseif tMP5 and versionCli<30000 then
 			lastEnergy = UnitPower("player")
 			frame:SetScript( 'OnUpdate', UpdateMana)
 			frame:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
 			frame:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
 			ThemeSparks(1,0,0,1)
+			visible = true
 		end
 		HideSparks()
-		frame:SetShown(tEnergy or tSwing)
+		frame:SetShown(visible)
 	end
 
 	local function DisableMP5(self)
@@ -692,6 +696,7 @@ do
 		local self = Bar_Create(db, embed)
 		self:Show()
 		self:SetScript("OnEvent", OnEvent)
+		if versionCli>=30000 then self:RegisterUnitEvent("UNIT_POWER_FREQUENT", db.unit) end
 		self:RegisterUnitEvent("UNIT_POWER_UPDATE", db.unit)
 		self:RegisterUnitEvent("UNIT_MAXPOWER", db.unit)
 		self:RegisterUnitEvent("UNIT_DISPLAYPOWER", db.unit)
@@ -713,9 +718,10 @@ do
 				EnergyTicker_Register(self)
 			end
 		end
-		self.UNIT_DISPLAYPOWER = self.UpdateColor
-		self.UNIT_POWER_UPDATE = self.UpdateValue
-		self.UNIT_MAXPOWER     = self.UpdateValue
+		self.UNIT_DISPLAYPOWER   = self.UpdateColor
+		self.UNIT_POWER_UPDATE   = self.UpdateValue
+		self.UNIT_POWER_FREQUENT = self.UpdateValue
+		self.UNIT_MAXPOWER       = self.UpdateValue
 		self:Update()
 		return self
 	end
