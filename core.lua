@@ -11,7 +11,7 @@ _G[addonName] = addon
 --====================================================================
 
 local versionToc = GetAddOnMetadata(addonName,'Version')
-addon.versionToc = versionToc=='@project-version@' and 'Dev' or 'v'..versionToc
+addon.versionToc = versionToc=='\@project-version\@' and 'Dev' or 'v'..versionToc
 
 --====================================================================
 
