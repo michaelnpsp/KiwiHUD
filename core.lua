@@ -10,6 +10,7 @@ _G[addonName] = addon
 
 --====================================================================
 
+local GetAddOnMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
 local versionToc = GetAddOnMetadata(addonName,'Version')
 addon.versionToc = versionToc=='\@project-version\@' and 'Dev' or 'v'..versionToc
 
