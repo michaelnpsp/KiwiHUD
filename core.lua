@@ -1182,10 +1182,12 @@ end
 do
 	local Melee
 	local Ranges
+	local RangesAlt, IsSpellRangeAlt
 	local UnitIsFriend = UnitIsFriend
 	local IsItemInRange = IsItemInRange
 	local IsSpellInRange = IsSpellInRange
 	if isRetail then
+		-- out of combat
 		Ranges = {
 			[false] = { -- hostile
 				37727, 63427, 34368, 32321, 33069, 10645, 31463, 835, 18904, 28767, 32698, 116139, 32825, 41265, 35278, 33119,
@@ -1222,6 +1224,45 @@ do
 				[35278]= 80, -- Reinforced Net
 			},
 		}
+		-- in combat
+		local GSI = GetSpellInfo
+		local hostileSpell = ({
+			DRUID       = 8921,
+			PRIEST      = 585,
+			SHAMAN      = 188196,
+			PALADIN     = 62124,
+			MONK        = 115546,
+			EVOKER      = 361469,
+			WARLOCK     = 686,
+			WARRIOR     = 355,
+			DEMONHUNTER = 185123,
+			HUNTER      = 132031,
+			ROGUE       = 36554,
+			DEATHKNIGHT = 47541,
+			MAGE        = 116,
+			})[PlayerClass]
+		local friendlySpell = ({
+			DRUID       = 8936,
+			PRIEST      = 2061,
+			SHAMAN      = 8004,
+			PALADIN     = 19750,
+			MONK        = 116670,
+			EVOKER      = 361469,
+			WARLOCK     = 20707,
+			DEATHKNIGHT = 47541,
+			MAGE        = 1459,
+			WARRIOR     = 162734, -- test spell
+			DEMONHUNTER = 162734, -- test spell
+			HUNTER      = 162734, -- test spell
+			ROGUE       = 162734, -- test spell
+			})[PlayerClass]		
+		RangesAlt = {
+			[false] = { GSI(hostileSpell),  [GSI(hostileSpell) ] = select(6,GSI(hostileSpell))  },
+			[true]  = { GSI(friendlySpell), [GSI(friendlySpell)] = select(6,GSI(friendlySpell)) },
+		}
+		function IsSpellRangeAlt(spell,unit)
+			return IsSpellInRange(spell,unit)==1
+		end
 	else
 		Ranges = {
 			[false] = { -- hostile
@@ -1256,10 +1297,16 @@ do
 		if Melee and IsSpellInRange(Melee)==1 then
 			self.Text:SetText( '0-5' )
 		else
-			local ranges, from, to = Ranges[ UnitIsFriend('player','target') ]
+			local RangesGet, RangeCheck
+			if RangesAlt and InCombat then
+				RangesGet, RangeCheck = RangesAlt, IsSpellRangeAlt
+			else
+				RangesGet, RangeCheck = Ranges, IsItemInRange
+			end
+			local ranges, from, to = RangesGet[ UnitIsFriend('player','target') ]
 			for i=1,#ranges do
 				to = ranges[i]
-				if IsItemInRange(to, 'target') then break end
+				if RangeCheck(to, 'target') then break end
 				from, to = to, nil
 			end
 			if to then
