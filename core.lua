@@ -1255,7 +1255,7 @@ do
 			DEMONHUNTER = 162734, -- test spell
 			HUNTER      = 162734, -- test spell
 			ROGUE       = 162734, -- test spell
-			})[PlayerClass]		
+			})[PlayerClass]
 		RangesAlt = {
 			[false] = { GSI(hostileSpell),  [GSI(hostileSpell) ] = select(6,GSI(hostileSpell))  },
 			[true]  = { GSI(friendlySpell), [GSI(friendlySpell)] = select(6,GSI(friendlySpell)) },
@@ -1310,7 +1310,7 @@ do
 				from, to = to, nil
 			end
 			if to then
-				self.Text:SetFormattedText( '%d-%d', ranges[from] or 0, ranges[to] )
+				self.Text:SetFormattedText( '%d-%d', ranges[from] or 0, ranges[to] or 0)
 			else
 				self.Text:SetFormattedText( '%d+', ranges[from] or 100 )
 			end
