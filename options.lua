@@ -922,7 +922,7 @@ function addon:InitializeOptions()
 		HideUIPanel(GameMenuFrame)
 		addon.OnChatCommand()
 	end)
-	InterfaceOptions_AddCategory(optionsFrame)
+	-- InterfaceOptions_AddCategory(optionsFrame)  -- TODO
 	addon.optionsFrame = optionsFrame
 	-- minimap icon
 	local icon = LibStub("LibDBIcon-1.0")

@@ -1080,11 +1080,12 @@ do
 	end
 
 	local Update = isMaxLevel and function(self)
-		if UnitCanAttack("player", 'target') then
+		if not InCombat then
+			self.Text:SetText('')
+		elseif UnitCanAttack("player", 'target') then
 			local _, _, threatPct, _, threatValue = UnitDetailedThreatSituation("player",'target')
 			if threatPct==100 then -- 100=>unit is tanking
 				self.Text:SetText( "|cffFF0000-- AGGRO --|r" )
-				return
 			else
 				if (threatPct or 0)>0 and threatValue>0 then -- threatPct can be zero in retail when unit is not tanking!
 					threatValue = threatValue/threatPct - threatValue/100
@@ -1095,23 +1096,31 @@ do
 				end
 				if threatValue>0 then
 					self.Text:SetFormattedText( "<|cff%s-%.1fk|r>", threatValue<5000 and 'FF8000' or '00FF00', threatValue/1000 )
-					return
+				else
+					self.Text:SetText('|cfffafa00 -- 0% --|r')
 				end
 			end
+		elseif UnitExists('target') then
+			self.Text:SetText('|cfffafa00 -- 0% --|r')
+		else
+			self.Text:SetText('|cfffafa00 -- COMBAT --|r')
 		end
-		self.Text:SetText( "" )
 	end or function(self)
-		if UnitCanAttack("player", 'target') then
+		if not InCombat then
+			self.Text:SetText('')
+		elseif UnitCanAttack("player", 'target') then
 			local _, status, threatPct = UnitDetailedThreatSituation("player",'target')
 			if threatPct==100 then -- 100=>unit is tanking
 				self.Text:SetText( "|cffFF0000-- AGGRO --|r" )
 			elseif threatPct then
 				self.Text:SetFormattedText( "<|cff%s%d%%|r>", status==0 and '00FF00' or 'FF8000', threatPct )
 			else
-				self.Text:SetText('|cfffafa00 -- ????? --|r')
+				self.Text:SetText('|cfffafa00 -- COMBAT --|r')
 			end
+		elseif UnitExists('target') then
+			self.Text:SetText('|cfffafa00 -- 0% --|r')
 		else
-			self.Text:SetText( "" )
+			self.Text:SetText('|cfffafa00 -- COMBAT --|r')
 		end
 	end
 
@@ -1185,7 +1194,8 @@ do
 	local RangesAlt, IsSpellRangeAlt
 	local UnitIsFriend = UnitIsFriend
 	local IsItemInRange = IsItemInRange
-	local IsSpellInRange = IsSpellInRange
+	local IsSpellInRange = C_Spell.IsSpellInRange
+	local ColorCheckSpell = isClassic and PlayerClass=='HUNTER' and 3044
 	if isRetail then
 		-- out of combat
 		Ranges = {
@@ -1303,16 +1313,25 @@ do
 			else
 				RangesGet, RangeCheck = Ranges, IsItemInRange
 			end
-			local ranges, from, to = RangesGet[ UnitIsFriend('player','target') ]
+			local friend = UnitIsFriend('player','target')
+			local ranges, from, to = RangesGet[ friend ]
 			for i=1,#ranges do
 				to = ranges[i]
 				if RangeCheck(to, 'target') then break end
 				from, to = to, nil
 			end
+			local Text = self.Text
 			if to then
-				self.Text:SetFormattedText( '%d-%d', ranges[from] or 0, ranges[to] or 0)
+				Text:SetFormattedText( '%d-%d', ranges[from] or 0, ranges[to] or 0)
 			else
-				self.Text:SetFormattedText( '%d+', ranges[from] or 100 )
+				Text:SetFormattedText( '%d+', ranges[from] or 100 )
+			end
+			if ColorCheckSpell then
+				if IsSpellInRange(ColorCheckSpell) or friend then
+					Text:SetTextColor( unpack(Text.textColor) )
+				else
+					Text:SetTextColor( 1, 0, 0, 1 )
+				end
 			end
 		end
 	end
@@ -1329,10 +1348,11 @@ do
 	end
 
 	local function Layout(self)
+		self.Text.textColor = self.db.textColor or ColorDefault
 		self.Text:ClearAllPoints()
 		self.Text:SetPoint( self.db.textAlign or 'CENTER', UIParent, 'CENTER', self.db.textOffsetX, self.db.textOffsetY )
 		self.Text:SetFont( Media:Fetch('font', self.db.textFont) or STANDARD_TEXT_FONT, self.db.textFontSize or 14, 'OUTLINE' )
-		self.Text:SetTextColor( unpack(self.db.textColor or ColorDefault) )
+		self.Text:SetTextColor( unpack(self.Text.textColor) )
 	end
 
 	local function TestMode(self)
