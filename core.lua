@@ -1097,11 +1097,11 @@ do
 				if threatValue>0 then
 					self.Text:SetFormattedText( "<|cff%s-%.1fk|r>", threatValue<5000 and 'FF8000' or '00FF00', threatValue/1000 )
 				else
-					self.Text:SetText('|cfffafa00 -- 0 --|r')
+					self.Text:SetText('|cfffafa00 -- COMBAT --|r')
 				end
 			end
-		elseif UnitExists('target') and not UnitIsUnit('target','player') then
-			self.Text:SetText('|cfffafa00 -- 0 --|r')
+		--elseif UnitExists('target') and not UnitIsUnit('target','player') then
+		--	self.Text:SetText('|cfffafa00 -- COMBAT --|r')
 		else
 			self.Text:SetText('|cfffafa00 -- COMBAT --|r')
 		end
@@ -1117,8 +1117,8 @@ do
 			else
 				self.Text:SetText('|cfffafa00 -- COMBAT --|r')
 			end
-		elseif UnitExists('target') and not UnitIsUnit('target','player') then
-			self.Text:SetText('|cfffafa00 -- 0% --|r')
+		--elseif UnitExists('target') and not UnitIsUnit('target','player') then
+		--	self.Text:SetText('|cfffafa00 -- COMBAT --|r')
 		else
 			self.Text:SetText('|cfffafa00 -- COMBAT --|r')
 		end
