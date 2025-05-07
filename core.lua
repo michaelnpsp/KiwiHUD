@@ -1191,11 +1191,13 @@ end
 do
 	local Melee
 	local Ranges
-	local RangesAlt, IsSpellRangeAlt
+	local RangesAlt
 	local UnitIsFriend = UnitIsFriend
 	local IsItemInRange = IsItemInRange
 	local IsSpellInRange = C_Spell.IsSpellInRange
 	local ColorCheckSpell = isClassic and PlayerClass=='HUNTER' and 3044
+	local GSI = GetSpellInfo
+	local IVS = function(spellID) return IsPlayerSpell(spellID) and spellID end
 	if isRetail then
 		-- out of combat
 		Ranges = {
@@ -1235,7 +1237,6 @@ do
 			},
 		}
 		-- in combat
-		local GSI = GetSpellInfo
 		local hostileSpell = ({
 			DRUID       = 8921,
 			PRIEST      = 585,
@@ -1270,9 +1271,6 @@ do
 			[false] = { GSI(hostileSpell),  [GSI(hostileSpell) ] = select(6,GSI(hostileSpell))  },
 			[true]  = { GSI(friendlySpell), [GSI(friendlySpell)] = select(6,GSI(friendlySpell)) },
 		}
-		function IsSpellRangeAlt(spell,unit)
-			return IsSpellInRange(spell,unit)==1
-		end
 	else
 		Ranges = {
 			[false] = { -- hostile
@@ -1295,6 +1293,42 @@ do
 			},
 		}
 		Melee = GetSpellInfo( ({ROGUE=2098})[PlayerClass] or 0 )
+		-- in combat
+		if PlayerClass=='DRUID' then
+			RangesAlt = {
+				[false] = { 6798, 5176, [6798] = 5, [5176] = 30, },	 -- hostile: bash, wrath
+				[true]  = { 5185, [20403] = 30,	}, 				     -- friendly: healing touch
+			}
+		else
+			local hostileSpell = ({
+				DRUID       = 5176, -- wrath
+				PRIEST      = 585,  -- smite
+				SHAMAN      = 403, -- lighting bolt
+				PALADIN     = IVS(20271) or 162734, -- Judgement
+				WARLOCK     = 686, -- shadow bolt
+				WARRIOR     = IVS(355) or 772, -- Taunt, Rend
+				MAGE        = 116,
+				HUNTER      = IVS(3044) or IVS(1978) or 162734, -- Arcane Shot, Serpent Sting
+				ROGUE       = IVS(1752) or 162734, -- Sinister Strike
+				DEATHKNIGHT = IVS(47541) or IVS(49576) or 162734, -- Death Coil, Death Grip
+				})[PlayerClass]
+			local friendlySpell = ({
+				DRUID       = 5185, -- healing touch
+				PRIEST      = 2050, -- lesser heal
+				SHAMAN      = 331, -- healing wave
+				PALADIN     = 635, -- holy light
+				WARLOCK     = IVS(20707) or 162734, -- Soulstone
+				MAGE        = IVS(1459) or 162734, -- Frostbolt, Fireball
+				HUNTER      = 162734, -- test spell
+				ROGUE       = 162734, -- test spell
+				WARRIOR     = 162734, -- test spell
+				DEATHKNIGHT = 47541,
+				})[PlayerClass]
+			RangesAlt = {
+				[false] = { GSI(hostileSpell),  [GSI(hostileSpell) ] = select(6,GSI(hostileSpell))  },
+				[true]  = { GSI(friendlySpell), [GSI(friendlySpell)] = select(6,GSI(friendlySpell)) },
+			}
+		end
 	end
 
 	local function Destroy(self)
@@ -1309,7 +1343,7 @@ do
 		else
 			local RangesGet, RangeCheck
 			if RangesAlt and InCombat then
-				RangesGet, RangeCheck = RangesAlt, IsSpellRangeAlt
+				RangesGet, RangeCheck = RangesAlt, IsSpellInRange
 			else
 				RangesGet, RangeCheck = Ranges, IsItemInRange
 			end
